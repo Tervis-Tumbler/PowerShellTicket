@@ -28,7 +28,7 @@ function Start-UDDashboardAuthentictaionExample {
     Start-UDDashboard -Dashboard $Dashboard -Port 10000 -AllowHttpForLogin
 }
 
-functinon Start-UDDashboardExamples {
+function Start-UDDashboardExamples {
     $Dashboard = . 'C:\Program Files\WindowsPowerShell\Modules\UniversalDashboard\1.6.1\poshud\dashboard.ps1'
     Start-UDDashboard -Dashboard $Dashboard
 }
@@ -150,63 +150,7 @@ function Start-TestDashboard {
     } 
     Start-UDDashboard -Dashboard $Dashboard -Port 10000 -AllowHttpForLogin
 
-
-    function New-UDElementInput {
-        [CmdletBinding()]
-        param (
-            $BackgroundColor,
-            $Content,
-            $DebugEndpoint,
-            [Parameter(Mandatory)]$Endpoint,
-            $FontColor,
-            $Id,
-            $SubmitText,
-            $Title
-        )
-
-        $UDCardParameters = $PSBoundParameters | ConvertFrom-PSBoundParameters -Property BackgroundColor,FontColor,Id,Title -AsHashTable
-        if (-not $Content) {
-            New-UDCard @UDCardParameters -Content {
-                $function:GetParameters___ = $Endpoint
-                $EndpointParametersHash = (Get-Command GetParameters___ -Type Function).Parameters
-                $EndpointParameters = $EndpointParametersHash.Keys | ForEach-Object {$EndpointParametersHash[$_]}
-
-                foreach ($EndpointParameter in $EndpointParameters) {
-                    $OuterUDElementParameters = if ($EndpointParameter.ParameterType -eq "System.Boolean") {
-                        @{
-                            Tag = "p"
-                        }
-                    } else {
-                        @{
-                            Tag = "div"
-                            Attributes = @{class="input-field"}
-                        }
-                    }
-
-                    New-UDElement @OuterUDElementParameters -Content {
-                        New-UDElement -Id $EndpointParameter.Name -Tag "input" -Attributes @{
-                            type = if ($EndpointParameter.ParameterType -eq "System.Boolean") {
-                                "checkbox"
-                            } else {
-                                "text"
-                            }
-                            name = $EndpointParameter.Name
-                        }
-                        New-UDElement -Id "$($EndpointParameter.Name)label" -Tag label -Attributes @{for=$EndpointParameter.Name; class=""} -Content {$EndpointParameter.Name}
-                    }
-                }
-            }
-        } else {
-            New-UDCard -UDCardParameters -Content $Content 
-        }
-    }
-
-    function New-TestInputForm {
-        New-UDCard -Title Summary -Content {
-            New-UDElementInput
-        }
-    }
-
+    
     Get-UDDashboard | Stop-UDDashboard
     $dashboard = New-UDDashboard -Title "PowerShellTicket" -Content {
         New-UDElementInput -Title "Summary" -Endpoint {param ($SummaryParam)}
@@ -231,7 +175,62 @@ function Start-TestDashboard {
         } -Endpoint {}
     } 
     Start-UDDashboard -Dashboard $Dashboard -Port 10000 -AllowHttpForLogin
+}
 
+function New-UDElementInput {
+    [CmdletBinding()]
+    param (
+        $BackgroundColor,
+        $Content,
+        $DebugEndpoint,
+        [Parameter(Mandatory)]$Endpoint,
+        $FontColor,
+        $Id,
+        $SubmitText,
+        $Title
+    )
+
+    $UDCardParameters = $PSBoundParameters | ConvertFrom-PSBoundParameters -Property BackgroundColor,FontColor,Id,Title -AsHashTable
+    if (-not $Content) {
+        New-UDCard @UDCardParameters -Content {
+            $function:GetParameters___ = $Endpoint
+            $EndpointParametersHash = (Get-Command GetParameters___ -Type Function).Parameters
+            $EndpointParameters = $EndpointParametersHash.Keys | ForEach-Object {$EndpointParametersHash[$_]}
+
+            foreach ($EndpointParameter in $EndpointParameters) {
+                $OuterUDElementParameters = if ($EndpointParameter.ParameterType -eq "System.Boolean") {
+                    @{
+                        Tag = "p"
+                    }
+                } else {
+                    @{
+                        Tag = "div"
+                        Attributes = @{class="input-field"}
+                    }
+                }
+
+                New-UDElement @OuterUDElementParameters -Content {
+                    New-UDElement -Id $EndpointParameter.Name -Tag "input" -Attributes @{
+                        type = if ($EndpointParameter.ParameterType -eq "System.Boolean") {
+                            "checkbox"
+                        } else {
+                            "text"
+                        }
+                        name = $EndpointParameter.Name
+                    }
+                    New-UDElement -Id "$($EndpointParameter.Name)label" -Tag label -Attributes @{for=$EndpointParameter.Name; class=""} -Content {$EndpointParameter.Name}
+                }
+            }
+        }
+    } else {
+        New-UDCard -UDCardParameters -Content $Content 
+    }
+}
+
+function New-TestInputForm {
+    New-UDCard -Title Summary -Content {
+        New-UDElementInput
+    }
 }
 
 function New-TervisUDElementInput {
