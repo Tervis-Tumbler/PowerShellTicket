@@ -149,32 +149,6 @@ function Start-TestDashboard {
         } -Endpoint {}
     } 
     Start-UDDashboard -Dashboard $Dashboard -Port 10000 -AllowHttpForLogin
-
-    
-    Get-UDDashboard | Stop-UDDashboard
-    $dashboard = New-UDDashboard -Title "PowerShellTicket" -Content {
-        New-UDElementInput -Title "Summary" -Endpoint {param ($SummaryParam)}
-
-        New-UDInput -Title "Summary" -Endpoint {
-            param (
-                $SummaryParam
-            )
-            $Summary
-        }
-        New-UDInput -Title "Notes" -Endpoint {
-            param (
-                $NotesParam
-            )
-            $Notes        
-        }
-        New-UDElementInput -Title "Summary3" -Endpoint {param ($Summary3Param,[Bool]$BoolParam)}
-        New-UDInput -Title "New Work Order" -Id "Form" -Content {
-            New-UDInputField -Type textbox -Name Summary
-            New-UDInputField -Type textbox -Name Summary2
-            New-UDInputField -Type 'checkbox' -Name 'Newsletter' -Placeholder 'Sign up for newsletter'
-        } -Endpoint {}
-    } 
-    Start-UDDashboard -Dashboard $Dashboard -Port 10000 -AllowHttpForLogin
 }
 
 function New-UDElementInput {
@@ -189,16 +163,17 @@ function New-UDElementInput {
         $SubmitText,
         $Title
     )
-
     $UDCardParameters = $PSBoundParameters | ConvertFrom-PSBoundParameters -Property BackgroundColor,FontColor,Id,Title -AsHashTable
     if (-not $Content) {
+        [String]$OnClick
+
         New-UDCard @UDCardParameters -Content {
             $function:GetParameters___ = $Endpoint
             $EndpointParametersHash = (Get-Command GetParameters___ -Type Function).Parameters
             $EndpointParameters = $EndpointParametersHash.Keys | ForEach-Object {$EndpointParametersHash[$_]}
 
             foreach ($EndpointParameter in $EndpointParameters) {
-                $OuterUDElementParameters = if ($EndpointParameter.ParameterType -eq "System.Boolean") {
+                $OuterUDElementParameters = if ($EndpointParameter.ParameterType.Name -eq "Boolean") {
                     @{
                         Tag = "p"
                     }
@@ -211,7 +186,7 @@ function New-UDElementInput {
 
                 New-UDElement @OuterUDElementParameters -Content {
                     New-UDElement -Id $EndpointParameter.Name -Tag "input" -Attributes @{
-                        type = if ($EndpointParameter.ParameterType -eq "System.Boolean") {
+                        type = if ($EndpointParameter.ParameterType.Name -eq "Boolean") {
                             "checkbox"
                         } else {
                             "text"
@@ -220,11 +195,72 @@ function New-UDElementInput {
                     }
                     New-UDElement -Id "$($EndpointParameter.Name)label" -Tag label -Attributes @{for=$EndpointParameter.Name; class=""} -Content {$EndpointParameter.Name}
                 }
+
+                $OnClick += "`$$($EndpointParameter.Name) = (Get-UDElement -Id '$($EndpointParameter.Name)').Attributes['value']`r`n"
+            }
+           
+            $RegexToMatchParamBlock = [regex]::new(@"
+(?x)
+\s*param\s*
+    \(                      # First '('
+        (?:                 
+        [^()]               # Match all non-braces
+        |
+        (?<open> \( )       # Match '(', and capture into 'open'
+        |
+        (?<-open> \) )      # Match ')', and delete the 'open' capture
+        )+
+        (?(open)(?!))       # Fails if 'open' stack isn't empty!
+
+    \)                      # Last ')'
+"@)
+            $EndpointWithoutParam = $Endpoint.ToString() -replace $RegexToMatchParamBlock, ""
+            $OnClick += $EndpointWithoutParam
+
+            New-UDElement -Tag div -Attributes @{class="row"} -Content {
+                New-UDElement -Tag div -Attributes @{class="col s12 right-align"} -Content {
+                    New-UDElement -Tag a -Attributes @{
+                        href="#!"
+                        class="btn"
+                        onClick = [ScriptBlock]::Create($OnClick)
+                    } -Content {"Submit"}
+                }
             }
         }
     } else {
         New-UDCard -UDCardParameters -Content $Content 
     }
+}
+
+function Invoke-DashboardTesting1234 {
+    
+    Get-UDDashboard | Stop-UDDashboard
+    $dashboard = New-UDDashboard -Title "PowerShellTicket" -Content {
+        New-UDElementInput -Title "Summary" -Endpoint {param ($SummaryParam)}
+
+        New-UDInput -Title "Summary" -Endpoint {
+            param (
+                $SummaryParam,
+                [Bool]$Checkbox
+            )
+            $Summary
+        }
+        New-UDElementInput -Title "Summary3" -Endpoint {param ($Summary3Param,[Bool]$BoolParam)} -Attributes @{
+            onClick = {
+                Add-UDElement -ParentId "Summary3" -Content {
+                    New-UDElement -Tag "p" -Content {
+                        "Add new element at $(Get-Date)"
+                    }
+                }        
+            } 
+        }
+        New-UDInput -Title "New Work Order" -Id "Form" -Content {
+            New-UDInputField -Type textbox -Name Summary
+            New-UDInputField -Type textbox -Name Summary2
+            New-UDInputField -Type 'checkbox' -Name 'Newsletter' -Placeholder 'Sign up for newsletter'
+        } -Endpoint {}
+    } 
+    Start-UDDashboard -Dashboard $Dashboard -Port 10000 -AllowHttpForLogin
 }
 
 function New-TestInputForm {
