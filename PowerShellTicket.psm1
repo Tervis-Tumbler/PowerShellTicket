@@ -245,14 +245,13 @@ function Invoke-DashboardTesting1234 {
             )
             $Summary
         }
-        New-UDElementInput -Title "Summary3" -Endpoint {param ($Summary3Param,[Bool]$BoolParam)} -Attributes @{
-            onClick = {
-                Add-UDElement -ParentId "Summary3" -Content {
-                    New-UDElement -Tag "p" -Content {
-                        "Add new element at $(Get-Date)"
-                    }
-                }        
-            } 
+        New-UDElementInput -Title "Summary3" -Endpoint {
+            param ($Summary3Param,[Bool]$BoolParam)
+            Add-UDElement -ParentId "Summary3" -Content {
+                New-UDElement -Tag "p" -Content {
+                    "Add new element at $(Get-Date)"
+                }
+            }
         }
         New-UDInput -Title "New Work Order" -Id "Form" -Content {
             New-UDInputField -Type textbox -Name Summary
