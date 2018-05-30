@@ -29,6 +29,7 @@ function Start-UDDashboardAuthentictaionExample {
 }
 
 function Start-UDDashboardExamples {
+    Get-UDDashboard | Where port -eq 80 | Stop-UDDashboard
     $Dashboard = . 'C:\Program Files\WindowsPowerShell\Modules\UniversalDashboard\1.6.1\poshud\dashboard.ps1'
     Start-UDDashboard -Dashboard $Dashboard
 }
